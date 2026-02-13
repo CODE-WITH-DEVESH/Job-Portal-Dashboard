@@ -5,6 +5,8 @@ function JobList({ jobs, handleApply, appliedJobs }) {
     <div>
       <h2>Available Jobs</h2>
 
+
+
       {jobs.map((job) => (
         <JobCard
           key={job.id}

@@ -7,74 +7,50 @@ import JobList from "./components/JobList";
 import AppliedJobs from "./components/Applied";
 
 function App() {
-
   const [jobs, setJobs] = useState([]);
 
-  const [appliedJobs, setAppliedJobs] = useState(() => {
+  const [loading, setLoading] = useState(true);
 
+  const [appliedJobs, setAppliedJobs] = useState(() => {
     const savedJobs = localStorage.getItem("appliedJobs");
 
     return savedJobs ? JSON.parse(savedJobs) : [];
-
   });
 
   const [searchText, setSearchText] = useState("");
 
-
-
   useEffect(() => {
-
     async function loadJobs() {
-
       try {
-
-        const res = await fetch(
-          "https://jsonplaceholder.typicode.com/users"
-        );
+        setLoading(true);
+        const res = await fetch("https://jsonplaceholder.typicode.com/users");
 
         const data = await res.json();
 
-        const jobData = data.map(user => ({
+        const jobData = data.map((user) => ({
           id: user.id,
           title: "Frontend Developer",
           company: user.company.name,
           location: user.address.city,
-          salary: "5 LPA"
+          salary: "5 LPA",
         }));
 
         setJobs(jobData); // ✅ FIXED
-
-      }
-      catch (err) {
-
+        setLoading(false);
+      } catch (err) {
         console.log("Error loading jobs");
-
       }
-
     }
 
     loadJobs();
-
   }, []);
 
-
-
   useEffect(() => {
-
-    localStorage.setItem(
-      "appliedJobs",
-      JSON.stringify(appliedJobs)
-    );
-
+    localStorage.setItem("appliedJobs", JSON.stringify(appliedJobs));
   }, [appliedJobs]);
 
-
-
   function handleApply(job) {
-
-    const alreadyApplied = appliedJobs.find(
-      (item) => item.id === job.id
-    );
+    const alreadyApplied = appliedJobs.find((item) => item.id === job.id);
 
     if (alreadyApplied) {
       alert("Already applied");
@@ -82,38 +58,26 @@ function App() {
     }
 
     setAppliedJobs([...appliedJobs, job]);
-
   }
-
-
 
   function handleRemove(jobId) {
-
-    const updatedJobs = appliedJobs.filter(
-      (job) => job.id !== jobId
-    );
+    const updatedJobs = appliedJobs.filter((job) => job.id !== jobId);
 
     setAppliedJobs(updatedJobs);
-
   }
 
-
-
-  const filteredJobs = jobs.filter((job) => // ✅ FIXED
-    job.title.toLowerCase().includes(searchText.toLowerCase())
+  const filteredJobs = jobs.filter(
+    (
+      job, // ✅ FIXED
+    ) => job.title.toLowerCase().includes(searchText.toLowerCase()),
   );
-
-
 
   const totalJobs = jobs.length; // ✅ FIXED
   const appliedCount = appliedJobs.length;
   const remainingJobs = totalJobs - appliedCount;
 
-
-
   return (
     <div>
-
       <Navbar />
 
       <Dashboard
@@ -122,10 +86,16 @@ function App() {
         remainingJobs={remainingJobs}
       />
 
-      <SearchBar
-        searchText={searchText}
-        setSearchText={setSearchText}
-      />
+      <SearchBar searchText={searchText} setSearchText={setSearchText} />
+      {loading ? (
+        <h3>Loading jobs...</h3>
+      ) : (
+        <JobList
+          jobs={filteredJobs}
+          handleApply={handleApply}
+          appliedJobs={appliedJobs}
+        />
+      )}
 
       <JobList
         jobs={filteredJobs}
@@ -133,14 +103,9 @@ function App() {
         appliedJobs={appliedJobs}
       />
 
-      <AppliedJobs
-        appliedJobs={appliedJobs}
-        handleRemove={handleRemove}
-      />
-
+      <AppliedJobs appliedJobs={appliedJobs} handleRemove={handleRemove} />
     </div>
   );
-
 }
 
 export default App;
