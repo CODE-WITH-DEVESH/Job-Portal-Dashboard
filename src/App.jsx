@@ -1,19 +1,75 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
 import Navbar from "./components/navbar";
-import JobCard from "./components/JobCard";
-import jobsData from "./data/jobsData";
+import Dashboard from "./components/Dashboard";
+import SearchBar from "./components/SearchBar";
+import JobList from "./components/JobList";
+import AppliedJobs from "./components/Applied";
 
 function App() {
 
-  const [appliedJobs, setAppliedJobs] = useState([]);
+  const [jobs, setJobs] = useState([]);
+
+  const [appliedJobs, setAppliedJobs] = useState(() => {
+
+    const savedJobs = localStorage.getItem("appliedJobs");
+
+    return savedJobs ? JSON.parse(savedJobs) : [];
+
+  });
+
   const [searchText, setSearchText] = useState("");
 
 
-  const totalJobs = jobsData.length;
-  const appliedCount = appliedJobs.length;
-  const remainingJobs = totalJobs - appliedCount;
 
- 
+  useEffect(() => {
+
+    async function loadJobs() {
+
+      try {
+
+        const res = await fetch(
+          "https://jsonplaceholder.typicode.com/users"
+        );
+
+        const data = await res.json();
+
+        const jobData = data.map(user => ({
+          id: user.id,
+          title: "Frontend Developer",
+          company: user.company.name,
+          location: user.address.city,
+          salary: "5 LPA"
+        }));
+
+        setJobs(jobData); // ✅ FIXED
+
+      }
+      catch (err) {
+
+        console.log("Error loading jobs");
+
+      }
+
+    }
+
+    loadJobs();
+
+  }, []);
+
+
+
+  useEffect(() => {
+
+    localStorage.setItem(
+      "appliedJobs",
+      JSON.stringify(appliedJobs)
+    );
+
+  }, [appliedJobs]);
+
+
+
   function handleApply(job) {
 
     const alreadyApplied = appliedJobs.find(
@@ -21,13 +77,15 @@ function App() {
     );
 
     if (alreadyApplied) {
-      alert("You already applied for this job");
+      alert("Already applied");
       return;
     }
 
     setAppliedJobs([...appliedJobs, job]);
 
   }
+
+
 
   function handleRemove(jobId) {
 
@@ -40,84 +98,49 @@ function App() {
   }
 
 
-  const filteredJobs = jobsData.filter((job) =>
+
+  const filteredJobs = jobs.filter((job) => // ✅ FIXED
     job.title.toLowerCase().includes(searchText.toLowerCase())
   );
+
+
+
+  const totalJobs = jobs.length; // ✅ FIXED
+  const appliedCount = appliedJobs.length;
+  const remainingJobs = totalJobs - appliedCount;
+
+
 
   return (
     <div>
 
-    
       <Navbar />
 
-   
-      <h2>Dashboard</h2>
-
-      <div>
-        <p>Total Jobs: {totalJobs}</p>
-        <p>Applied Jobs: {appliedCount}</p>
-        <p>Remaining Jobs: {remainingJobs}</p>
-      </div>
-
-
-
-      <input
-        type="text"
-        placeholder="Search Jobs..."
-        value={searchText}
-        onChange={(e) => setSearchText(e.target.value)}
+      <Dashboard
+        totalJobs={totalJobs}
+        appliedCount={appliedCount}
+        remainingJobs={remainingJobs}
       />
 
+      <SearchBar
+        searchText={searchText}
+        setSearchText={setSearchText}
+      />
 
-      
-      <h2>Available Jobs</h2>
+      <JobList
+        jobs={filteredJobs}
+        handleApply={handleApply}
+        appliedJobs={appliedJobs}
+      />
 
-      {filteredJobs.map((job) => (
-
-        <JobCard
-          key={job.id}
-          title={job.title}
-          company={job.company}
-          location={job.location}
-          salary={job.salary}
-          onApply={() => handleApply(job)}
-          isApplied={appliedJobs.some(
-            (item) => item.id === job.id
-          )}
-        />
-
-      ))}
-
-
-
-      <h2>Applied Jobs List</h2>
-
-      {appliedJobs.length === 0 ? (
-        <p>No jobs applied yet</p>
-      ) : (
-        appliedJobs.map((job) => (
-
-          <div key={job.id}>
-
-            <p>
-              {job.title} - {job.company}
-
-              <button
-                onClick={() => handleRemove(job.id)}
-                style={{ marginLeft: "10px" }}
-              >
-                Remove
-              </button>
-
-            </p>
-
-          </div>
-
-        ))
-      )}
+      <AppliedJobs
+        appliedJobs={appliedJobs}
+        handleRemove={handleRemove}
+      />
 
     </div>
   );
+
 }
 
 export default App;
